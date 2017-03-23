@@ -30,6 +30,10 @@ class Pokemann:
             pass
                     
         return result
+
+    def get_random_move(self):
+        available = self.get_available_moves()
+        return random.choice(available)
     
     def execute_move(self, move, target):
         available = self.get_available_moves()
@@ -50,26 +54,25 @@ class Pokemann:
 
             move.remaining_power -= 1
 
-    def faint(self):
-        self.current_health = 0
-        print(self.name + " fainted!")
-        self.fainted = True
-        
     def take_damage(self, amount):
         self.current_health -= amount
 
         if self.current_health <= 0:
             self.faint()
             
-    def draw(self):
-        pass
-
+    def faint(self):
+        self.current_health = 0
+        print(self.name + " fainted!")
+        self.fainted = True
+            
+ 
     def heal(self, amount):
         self.current_health += amount
         if self.current_health > self.health:
             self.current_health = self.health
 
         self.fainted = False
+        print(self.name + "was healed. Health is now " + str(self.current_health) + "/" + str(self.health))
         
     def restore(self):
         self.current_health = self.health
@@ -77,7 +80,9 @@ class Pokemann:
             move.remaining_power = move.powerpoint
         print(self.name + " has been restored to full stats")
 
-        
+    def draw(self):
+        pass
+ 
 
 class Move:
     STRONG = 2.0
@@ -106,10 +111,10 @@ class Move:
         self.accuracy = accuracy
         self.remaining_power= powerpoint
 
-    def get_damage(self, attacker, target):
-        x= self.power
-        a= attacker.attack
-        d= target.defense
+    def calculate_damage(self, attacker, target):
+        p = self.power
+        a = attacker.attack
+        d = target.defense
         e = self.effectiveness[(self.kind, target.kind)]
         
         return math.floor((((a*x)/50)-(d/10))*e)
@@ -120,23 +125,22 @@ class Move:
         
 class Character:
     
-    def __init__(self, name, pokemann, image):
+    def __init__(self, name, party, image):
         self.name = name
-        self.pokemann = pokemann
+        self.party = party
         self.image = image
-        self.available = pokemann
         
     def get_available_pokemann(self):
-        available = []
+        result = []
             
-        for a in self.pokemann:
+        for a in self.party:
             if a.fainted == False:
-                available.append(a)
+                result.append(a)
 
             elif a.fainted == True:
                 pass
 
-        return available
+        return result
     
     def get_active_pokemann(self):
         """
@@ -154,7 +158,7 @@ class Character:
         self.available[0], self.available[swap_pos]= self.available[swap_pos], self.available[0]
         '''
     def restore(self):
-        for p in self.pokemann:
+        for p in self.party:
             p.restore()
             
     def draw(self):
@@ -244,8 +248,8 @@ class Character:
             
 class Player(Character):
 
-    def __init__(self, name, pokemann, image):
-        Character.__init__(self, name, pokemann, image)
+    def __init__(self, name, party, image):
+        Character.__init__(self, name, party, image)
 
         self.computer = []
         self.pokeballs = 0
@@ -266,11 +270,11 @@ class Player(Character):
         if r <= target.catch_rate:
             print("Congratulations! You just caught a " + target.name + " !")
             
-            if len(self.pokemann) < 6:
-                self.pokemann.append(target)
+            if len(self.party) < 6:
+                self.party.append(target)
                 print(target.name + " has been added to your party!")
                 target.restore()
-            elif len(self.pokemann) == 6:
+            elif len(self.party) == 6:
                 self.computer.append(target)
                 print(target.name + " has been put in your locker.")
                 target.restore()
@@ -285,13 +289,19 @@ class Player(Character):
         randomness so that speed is not the only factor determining success.
         Return True if the escape is successful and False otherwise.
         """
-        pass
+        self.get_active_pokemann()
+        p = available[0]
+        r = random.randint(-30, 30)
+        if p.speed + (2*r) > target.speed + r:
+            return True
+        else:
+            return False
     
    
 class NPC(Character):
 
-    def __init__(self, name, pokemann, image):
-        Character.__init__(self, name, pokemann, image)
+    def __init__(self, name, party, image):
+        Character.__init__(self, name, party, image)
       
 
 class Game:
@@ -333,7 +343,7 @@ if __name__ == '__main__':
     casey = Player("Casey Katch-em-all", [blessed_little_goose, pedro_the_imported_platypus, blek_the_snek], "casey.png")
     river = Player("River the Radical", [baaaa_goat, american_spirit_eagle, teenage_mutant_ninja_daddy], "river.png")
 
-    # Create Opponents
+    # Create NPCs
 
     # Create a Game
     g = Game()
